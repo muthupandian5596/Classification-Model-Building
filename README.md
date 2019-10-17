@@ -1,2 +1,2 @@
 # ML-Code-Hub
-Contains Code for Various Data Science techniques
+Contains code for various Data Science techniques
