@@ -1,0 +1,186 @@
+---
+title: "Time Series Analysis - Gas"
+author: "Muthu Pandian G"
+date: "January 28, 2020"
+output:
+  word_document: default
+  html_document: default
+---
+## Set the Working Directory 
+```{r}
+setwd("D:/Great Lakes/Projects/Time Series Analysis")
+```
+## Reading Data into R
+```{r cars}
+library(forecast)
+gas <- window(gas)
+
+```
+
+```{r}
+class(gas)
+start(gas)
+end(gas)
+frequency(gas)
+```
+## Exploratory Data Analysis (EDA)
+
+### Summary 
+
+```{r}
+
+summary(gas)
+```
+
+## Plotting the Time Series
+```{r}
+plot(gas,main = "Australian Monthly Gas Production",xlab= "Years", ylab = "Gas Production")
+```
+
+
+```{r}
+gas1 <- window(gas,start = c(1970,1), end = c(1994,12), frequency = 12)
+plot(gas1,main = "Australian Monthly Gas Production",xlab= "Years", ylab = "Gas Production")
+```
+
+## Seasonal Plots 
+
+```{r}
+ggseasonplot(gas1,main = "Australian Monthly Gas Production",xlab= "Seasons", ylab = "Gas Production")
+```
+
+#Split data into train and test sets
+```{r}
+gas1.train <- window(gas1,start = c(1970,1),end = c(1993,12),frequency = 12)
+gas1.test<- window(gas1,start = c(1994,1),frequency = 12)
+
+```
+# Decomposing Time Series
+## Decomposing Seasonal Data
+```{r}
+gas_Additivecomponents <- decompose(gas1.train,"additive")
+
+autoplot(gas_Additivecomponents)
+gas_Additivecomponents$seasonal
+gas_Additivecomponents$trend
+gas_Additivecomponents$random
+```
+
+
+```{r}
+### Let's try and make this multiplicative
+gas_multiplicativecomponents <- decompose(gas1.train,"multiplicative")
+
+autoplot(gas_multiplicativecomponents)
+gas_multiplicativecomponents$seasonal
+gas_multiplicativecomponents$trend
+gas_multiplicativecomponents$random
+```
+Still the same pattern hence series is additive.
+
+
+```{r}
+ses.gas <- ses(gas1.train, alpha = 0.2, h=12)
+autoplot(ses.gas)
+```
+
+```{r}
+accuracy(ses.gas, gas1.test)
+```
+
+#Holt winters Model
+
+```{r}
+gas.hw <- ets(gas1.train, model = "AAA")
+autoplot(forecast(gas.hw))
+
+summary(gas.hw)
+
+
+# forecast the next 12 months
+gas.hw.forecast <- forecast(gas.hw, h = 12)
+accuracy(gas.hw.forecast, gas1.test)
+```
+
+# Stationarity
+Null Hypothesis -  unit root is present in a time series sample.
+Alternate Hypothesis - series is stationary 
+```{r}
+library(tseries)
+adf.test(gas1, alternative = "stationary")
+```
+
+# ACF and PACF plots
+
+```{r}
+acf(gas1)
+acf(gas1, lag.max = 50)
+pacf(gas1, lag.max = 50)
+```
+
+
+## Seasonally Adjusting
+
+```{r}
+decomp = stl(gas1, s.window = "periodic")
+deseasonal_gas=seasadj(decomp)
+plot(decomp)
+```
+
+```{r}
+diff_gas = diff(gas1, differences = 1)
+plot(diff_gas,main = "Differenced Series")
+adf.test(diff_gas, alternative = "stationary")
+```
+# Acf and Pacf for dif time series
+```{r}
+Acf(diff_gas,lag.max = 50, main='ACF for Differenced Series')
+Pacf(diff_gas,lag.max = 50, main='PACF for Differenced Series')
+```
+
+Splitting into training and test sets
+```{r}
+gasTstrain = window(deseasonal_gas, start=c(1970,1), end=c(1993,12),frequency = 12)
+gasTStest= window(deseasonal_gas, start=c(1994,1))
+```
+
+
+```{r}
+gasarima <- arima(gasTstrain,order = c(0,1,2))
+gasarima
+tsdisplay(residuals(gasarima), lag.max=50, main='Model Residuals')
+```
+
+# Fitting an Auto Arima model
+```{r}
+Fit1 <- auto.arima(gasTstrain, seasonal = TRUE)
+Fit1
+tsdisplay(residuals(Fit1), lag.max=50, main='Model Residuals')
+```
+Auto ARIMA also fits the same p and q parameters for the model, but has a slightly lower AIC.
+
+#Ljung box test
+H0: Residuals are independent
+Ha: Residuals are not independent
+
+```{r}
+library(stats)
+Box.test(gasarima$residuals)
+
+```
+
+
+
+# Forecasting Using an Manual- ARIMA Model
+
+```{r}
+Manual_gasarima_Forecast <- forecast(gasarima, h = 12)
+accuracy(Manual_gasarima_Forecast,gasTStest)  
+```  
+  
+# Forecasting Using an Auto-ARIMA Model
+```{r}
+Auto_gasarima_Forecast <- forecast(Fit1, h = 12)
+accuracy(Auto_gasarima_Forecast,gasTStest)
+```  
+
