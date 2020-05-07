@@ -1,0 +1,181 @@
+---
+title: "Cold Storage Case Study"
+author: "Muthu Pandian G"
+date: "July 23, 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+# Cold Storage Case Study
+## About Cold Storage
+    Cold Storage started its operations in Jan 2016. 
+    They are in the business of storing Pasteurized Fresh Whole or Skimmed Milk,
+    Sweet Cream, Flavored Milk Drinks.
+## Problem 1 Statement 
+    In the first year of business they outsourced the plant maintenance work 
+    to a professional company with stiff penalty clauses.
+
+    It was agreed that if it was statistically proven that probability of temperature   going outside the 2 degrees - 4 degrees C during the one-year contract was above 2.5% and less than 5% then the penalty would be 10% of AMC (annual maintenance case). 
+    In case it exceeded 5% then the penalty would be 25% of the AMC fee
+    
+## Importing Data Set 
+```{r}
+setwd("D:/Great Lakes/Projects/First Project - Cold Storage Case Study")  
+cold_storage_data <- read.csv("K2_Cold_Storage_Temp_Data.csv",header= TRUE)
+attach(cold_storage_data)
+```
+#Descriptive Statistics
+###Dimension of Cold Storage Temperature Data 
+```{r}
+dim(cold_storage_data)
+```
+###Structure of Cold Storage Tempertaure Data 
+```{r}
+str(cold_storage_data)
+```
+###Summary of Cold Storage Temperature Data 
+```{r}
+summary(cold_storage_data)
+```
+
+###Mean cold storage temperature for Summer, Winter and Rainy Season
+```{r}
+season_mean <- aggregate(Temperature~Season,FUN = mean)
+print(season_mean)
+```
+
+###Overall mean for the full year
+```{r}
+mean<- mean(Temperature)
+print(mean)
+```
+
+###Standard Deviation for the full year
+```{r}
+sd <- sd(Temperature)
+print(sd)
+```
+
+###Frequency Plot of Temperature
+```{r}
+hist(Temperature,col = "Blue")
+```
+
+From the plot we can Assume it as Normal distribution,
+As per Quality Control range given by Cold Storage (2 deg - 4 deg)
+
+####Lets see the probability of temperature having fallen below 2 deg C
+```{r}
+pnorm(2,2.96274,0.508589)
+```
+
+####Lets see the probability of temperature having gone above 4 deg C
+```{r}
+(1-pnorm(4,2.96274,0.508589))*100
+```
+
+From the above values its clear that,
+
+`r pnorm(2,2.96274,0.508589)*100`% chances of temperature having fallen below 2 deg C
+
+`r (1-pnorm(4,2.96274,0.508589))*100`% chances of temperature having gone above 4 deg C
+
+Hence we can statistically prove that there is 2.9 % chance of temperature falling below 2 deg C and 2.07 % chance of temperature falling above 4 deg C
+
+So as per penalty clauses our probablity lies between 2.5 % to 5%.
+So there would be 10% Penalty For the AMC Company.
+
+## Problem 2 Statement 
+
+  In Mar 2018, Cold Storage started getting complaints from their Clients that they have been getting complaints from end consumers of the dairy products going sour and often smelling. On getting these complaints, the supervisor pulls out data of last 35 days temperatures. As a safety measure, the Supervisor has been vigilant to maintain the temperature below 3.9 deg C. 
+
+Assume 3.9 deg C as upper acceptable temperature range and at alpha = 0.1 do you feel that there is need for some corrective action in the Cold Storage Plant or is it that the problem is from procurement side from where Cold Storage is getting the Dairy Products.
+
+## Importing Data Set 
+```{r}
+setwd("D:/Great Lakes/Projects/First Project - Cold Storage Case Study")  
+Cold_Storage <- read.csv("Cold_Storage_Mar2018.csv")
+attach(Cold_Storage)
+```
+
+#Descriptive Statistics 
+###Dimension of Cold Storage
+```{r}
+dim(Cold_Storage)
+```
+###Total number of rows or sample size
+```{r}
+n <- nrow(Cold_Storage)
+print(n)
+```
+###Mean of Temperature
+```{r}
+sample_mean <- mean(Temperature)
+print(sample_mean)
+Mu<- 3.9 # as per our problem statement Assume 3.9 deg C as upper acceptable temperature range
+```
+
+###Standard Deviation of Temperature 
+we take population standard deviation for z test
+```{r}
+sd<- 0.508589
+print(sd)
+```
+
+From Problem statement we take alpha = 0.1 which means 90% significance level
+
+### Hypothesis Statement 
+
+As Per our Problem statement,
+Our Null Hypothesis will be h0 mu>= 3.9 which means there is Need for corrective action
+Our Alternate Hypothesis will be h1 mu < 3.9 No need for corrective action
+Based on our Hypothesis statement we can be sure that it is One Tailed Test 
+
+## Z-Statistics
+```{r}
+sample_error <- sample_mean - Mu
+standard_error <- sd/(sqrt(n))
+z <- sample_error/standard_error
+print(z)
+```
+#### Probabaility / chances of our Z Value to occur in the Critical Region
+```{r}
+pnorm(-abs(z))
+```
+#### Z-Test Inference
+
+Since our Probability value(0.1937619) is greater than our significance level (0.1) i.e., p>alpha
+It means that we doesn't have enough evidence in rejecting null hypothesis at 0.1 level of significance.So we are unable to reject Null Hypothesis which is H0 : mu< 3.9 
+Based on our Ztest results, we can arrive to the conclusion that there is a corrective action required in Cold Storage Plant 
+
+## T-Statistics
+For T- Test we need to take Sample Standard Deviation as per Formula,
+```{r}
+sd1 <- sd(Temperature)
+print(sd1)
+t.test(Temperature,mu=3.9,conf.level = 0.90)
+```
+
+#### T-Test Inference
+We Can Clearly see that our Pvalue(0.009422) is way less than our significance level (alpha=0.1) i.e.,p< alpha.
+From this it is safe to say that we have enough evidence to reject the null Hypothesis and accept the alternate hypothesis
+As per T- Test Results we can arrive to the conclusion that there is NO need for corrective action in the Cold Storage Plant 
+
+# Inference From Both Tests
+It's Pretty clear that both tests gives us different results.
+In Z test we concluded that there is need for some corrective action in the Cold Storage Plant
+In T test we concluded that there is no need for corrective action in the Cold Storage Plant and the problem is from procurement side from where Cold Storage is getting the Dairy Products
+Now we are in a dilemma,Which test to rely on and make decision 
+This is when our conditions to choose test statistics using Central Limit Theorem comes handy,
+It says that  t-test is necessary for small samples (n<30) because their distributions are not normal
+If the sample is large (n>=30) then statistical theory says that the sample mean is normally distributed and a z test for a single mean can be used. 
+which is clearly proven here 
+Hence we need to rely on z test as our n = 35 and make decision based on Z-test Inference. ie., there is need for some corrective action in the Cold Storage Plant
+
+###Frequency Plot of Temperature
+```{r}
+hist(Temperature,col="red")
+```
+From the above plot we can clearly see that somedays the Temperature values went above our  upper acceptable temperature range of  3.9 deg C. SO it is pretty clear that we need to take some corrective action in the Cold Storage Plant.
