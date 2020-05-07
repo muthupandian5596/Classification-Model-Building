@@ -1,0 +1,82 @@
+---
+title: "Market Basket Analysis"
+output:
+  word_document: default
+  html_notebook: default
+---
+```{r}
+setwd("D:/Great Lakes/Projects/Domain/Marketing")
+getwd()
+MBA <- read.table("Cafe Coffee Night-1.csv",sep=",",header = TRUE)
+MBA <- MBA[,-11]
+```
+
+```{r}
+MBA.Agg <- split(MBA$Item.Desc,MBA$Bill.Number)
+head(MBA.Agg)
+```
+
+```{r}
+MBA.Agg1 <- list()
+for(i in 1: length(MBA.Agg)){
+  MBA.Agg1[[i]] = unique(MBA.Agg[[i]])
+}
+head(MBA.Agg1)
+```
+
+```{r}
+library(arules)
+Txns = as(MBA.Agg1,"transactions")
+summary(Txns)
+inspect(Txns[10])
+```
+
+``` {r}
+
+freq <- itemFrequency(Txns)
+freq <- freq[order(-freq)]
+barplot(freq[1:20])
+itemFrequencyPlot(Txns,support=0.1)
+itemFrequencyPlot(Txns,topN = 10)
+```
+
+
+```{r}
+#freq <- itemFrequency(Txns)
+#freq <- freq[order(-freq)]
+#barplot(freq[1:20])
+#itemFrequencyPlot(Txns,support=0.1)
+#itemFrequencyPlot(Txns,topN = 10)
+```
+
+```{r}
+#arules <- apriori(data = Txns)
+arules <- apriori(data = Txns,parameter = list(support=0.0005,confidence=0.2,maxlen=2))
+inspect(sort(arules,by="lift"))
+
+```
+
+
+```{r}
+library(arulesViz)
+library(RColorBrewer)
+plot(arules,control = list(col = brewer.pal(11,"Spectral")))
+```
+```{r}
+Subrules <- head(sort(arules,by="support"),20)
+inspect(Subrules)
+plot(Subrules,method = "graph")
+
+```
+
+```{r}
+rules_df <- as(arules,"data.frame")
+#Rule {a} => {b}
+#Prob(A), LHS Support
+rules_df$LHS_Support <- rules_df$support/rules_df$confidence
+#Prob(B), RHS Support
+rules_df$RHS_Support <- rules_df$confidence /rules_df$lift
+#inspect(rules_df)
+#write.table(rules_df,file="mba_output.csv",sep=",",append = FALSE,row.names = FALSE)
+
+```
