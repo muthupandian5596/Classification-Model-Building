@@ -1,0 +1,447 @@
+---
+title: "Factor Hair"
+author: "Muthu Pandian G"
+date: "August 26, 2019"
+output:
+  word_document: default
+  html_document: default
+---
+# Mini Project on PCA and Regression using Hair Dataset
+## OBJECTIVE OF THE PROJECT:
+  The objective of the project is to use the dataset 'Factor-Hair-Revised.csv in a new window' to build an optimum regression model to predict satisfaction.
+  You are expected to,
+        Perform exploratory data analysis on the dataset.
+        Showcase some charts, graphs. Check for outliers and missing values (8 marks)
+        Is there evidence of multicollinearity ? Showcase your analysis(6 marks)
+        Perform  simple linear regression for the dependent variable with every independent variable (6 marks)
+        Perform PCA/Factor analysis by extracting 4 factors.
+        Interpret the output and name the Factors (20 marks)
+        Perform Multiple linear regression with customer satisfaction as dependent variables and the four factors as independent variables.
+        Comment on the Model output and validity.
+        Your remarks should make it meaningful for everybody
+## Steps to Follow to analyze 
+
+  Data Exploration
+???  Collinearity of the variables
+???  Initial Regression analysis
+???  Factor Analysis
+???  Labelling and interpreting of the factors
+???  Regression analysis using the factors as independent variable
+???  Model performance measures
+## Importing the Dataset
+```{r}
+setwd("D:/Great Lakes/Projects/REGRESSION AND PCA")
+Hair <- read.csv("Factor-Hair-Revised.csv",header = TRUE)
+attach(Hair)
+```
+##Understanding the data
+### Structure of Data
+```{r}
+str(Hair)
+```
+### Column Names
+```{r}
+names(Hair)
+```
+  We have 13 variables and 100 observations.
+  We have 12 independent Variables
+  1 Dependent Variables - Customer Satisfaction
+  All the variables are of numeric data type except ID Variable which is Integer data type
+### Summary
+```{r}
+summary(Hair)
+```
+## Description of Variables 
+
+## Data Preparation
+## Checking NA Values/ Missing Values
+```{r}
+sapply(Hair,function(x) sum(is.na(x)))
+```
+# Exploratory Data Analysis 
+## Univariate Analysis
+## Frequency Distribution of each Independent numerical Variable
+
+```{r}
+hist(ProdQual,col = "yellow",breaks = 20,main = "Histogram Of Product Quality",xlab = expression(bold(ProdQual)))
+```
+  From the Product Quality plot we can see that the the Product Quality ratings distribution lies in the range 5 - 10.
+  Most of the Product Quality got ratings around 9-9.5.It means most of the Product Quality is Very good.
+  Another important thing to note is its not normally Distributed.
+  
+```{r}
+hist(Hair$Ecom,col = "Blue",breaks = 20,main = "Histogram Of E-Commerce",xlab = expression(bold(Ecom)))
+```
+Here,in the Ecommerce plot the Ecom rating distribution lies in the range of 2- 6.
+   Its clear that the Ecom services provided is not good as we dont have a single rating above 6.
+   It is almost normally distributed.
+   
+```{r}
+hist(TechSup,col = "Red",main = "Histogram of Technical Support",xlab = expression(bold(TechSup)))
+```
+    Here,in the TechnicalSupport plot the Tech Support ratings distribution range lies from 1 to 8.5 as most values tend to be around 5-7
+    From this we can infer that the rating  for Technical Support is pretty average and have a even spread.
+    
+```{r}
+hist(CompRes,col = "Green",main = "Histogram of Complaint Resolution",xlab = expression(bold(CompRes)))
+```
+    From this plot, the Complaint Resolution ratings distribution range lies from 2 to 8 as most values tend to be around 5-6
+    From this we can infer that the rating  for Complaint Resolution is pretty average.
+    It is almost normally distributed.
+```{r}    
+hist(Advertising,col = "Purple",main = "Histogram of Advertising",xlab = expression(bold(Advertising)))
+```
+    Here, the Advertising ratings range lies from 1.9 to 6.5 as most values tend to be around 3.2 and 4.2 
+    From this we can infer that the rating  for Advertising is also pretty average and it has a even spread.
+```{r}
+hist(ProdLine,col = "Grey",main = "Histogram of Product Line",xlab = expression(bold(ProdLine)))
+```
+    From this plot, the Product Line ratings distribution range lies from 2 to 8.5 as most values tend to be around 5-6
+    From this we can infer that the average rating  for Product Line is around 5.5 which is pretty average.
+    It is almost normally distributed.
+```{r}
+hist(SalesFImage,col = "Orange",breaks = 20,main = "Histogram of Sales Force Image",xlab = expression(bold(SalesFImage)))
+```
+    Here, the Sales Force Image range lies from 2.9 to 8.2 as most values tend to be around 4.6.
+    From this we can infer that the rating  for Sales Force Image is also pretty average and it has a even spread.
+    There is a possibility of Outlier also which we will check using boxplot later on.
+```{r}
+hist(ComPricing,col = "Violet",breaks = 20,main = "Histogram of Competitive Pricing",xlab = expression(bold(ComPricing)))
+```
+    From the Plot, the Competitive Pricing range lies from 3.7 to 9.9 as most values tend to be around 8.2.
+    We can Infer that the pricing range is good as most value lies above 6 rating.
+    Its a even Spread
+```{r}
+hist(WartyClaim,col = "Dark Blue",breaks = 20,main = "Histogram of Warranty & Claim",xlab = expression(bold(WartyClaim)))
+```
+    From the Plot, the Warranty & Claim range lies from 4.1 to 8.1 as most values tend to be around 6.
+    Its a evenly Spread allover
+```{r}
+hist(OrdBilling,col = "Dark Green",breaks = 20,main = "Histogram of Order & Billing",xlab = expression(bold(OrdBilling)))
+```
+    Here, the Order and Billing range lies from 2 to 6.7 as most values tend to be around 4.2.
+    Clearly the Order and Billing range is below average as most values lies under 5.
+    There is a possibility of Outlier also which we will check using boxplot later on.
+```{r}
+hist(DelSpeed,col = "Dark Grey",breaks = 20,main = "Histogram of Delivery Speed",xlab = expression(bold(DelSpeed)))
+```
+    Here, the Delivery Speed range lies from 1.6 to 5.5 as most values tend to be around 3.9.
+    Clearly the Delivery Speed range is below average as most values lies under 5.
+    There is a possibility of Outlier also which we will check using boxplot later on.
+
+## Outlier Detection
+```{r}
+boxplot(Hair[,2:13],col=rainbow(length(Hair[,2:13])),las=2)
+```
+    From the Plot its Clear that the Variables E-Commerce,Sales Force Image,Order and Billing,Delivery Speed has Outliers, Which we also seen in Histogram Plot.
+    We need to deal with the outlier as it will affect our Model interprettability/Validity.
+    We need to find the Outlier values using the formula (Q1-1.5IQR,Q1+1.5IQR)
+    
+# Outlier Treatment 
+    There are different methods in dealing with Outliers
+    One Of the method is Winsorizing technique which replaces the outliers with the allowable or Benchmark Range(Q1-1.5IQR,Q1+1.5IQR).
+```{r}
+summary(Hair$Ecom)
+benchmark <- 3.925+1.5*IQR(Hair$Ecom)
+print(benchmark)
+```
+    Benchmark is the upper allowable Limit 
+```{r}
+Hair$Ecom[Hair$Ecom>4.9] <- benchmark
+summary(Hair$Ecom)
+boxplot(Hair$Ecom,col = "orange")
+```
+    We have replaced the Outliers with acceptable or allowable range which is evident in the boxplot
+    Now Lets do the same process for all other variables which has outliers
+```{r}
+summary(Hair$SalesFImage)
+benchmark1 <- 5.800+1.5*IQR(Hair$SalesFImage)
+print(benchmark1)
+Hair$SalesFImage[Hair$SalesFImage>7.75] <- benchmark1
+summary(Hair$SalesFImage)
+boxplot(Hair$SalesFImage,col = "cyan")
+
+summary(Hair$OrdBilling)
+benchmark2 <- 4.800+1.5*IQR(Hair$OrdBilling)
+print(benchmark2)
+Hair$OrdBilling[Hair$OrdBilling>6.45] <- benchmark2
+l.benchmark2 <- 3.700-1.5*IQR(Hair$OrdBilling)
+print(l.benchmark2)
+```
+l.benchmark2 means lower benchmark/ acceptable range as Order & Billing has outliers in both sides
+```{r}
+Hair$OrdBilling[Hair$OrdBilling<2.05] <- l.benchmark2
+summary(Hair$OrdBilling)
+boxplot(Hair$OrdBilling,col = "Purple")
+
+summary(Hair$DelSpeed)
+l.benchmark3 <- 3.400-1.5*IQR(Hair$DelSpeed)
+print(l.benchmark3)
+Hair$DelSpeed[Hair$DelSpeed<1.8625] <- l.benchmark3
+summary(Hair$DelSpeed)
+boxplot(Hair$DelSpeed,col = "Pink")
+
+boxplot(Hair[,2:13],col=rainbow(length(Hair[,2:13])),las = 2)
+```
+   Now Let's Check Whether there is evidence of Multicollinearity
+```{r}
+library(corrplot)
+Cor <- cor(Hair[,c(-1,-13)])
+print(Cor)
+```
+    From The output , we can clearly see there is High Multi-Collinearity between all the Independent Variables with each other
+    Let's check this with Corrplot
+```{r}
+corrplot(Cor,method = "number")
+```
+    From The Plot , it's evident that there is High Multi-Collinearity between all the Independent Variables with each other
+    Lets build a simple Linear Regression model for the dependent Variable with every independent variable and interpret the significance
+##  Initial Simple Linear Regression analysis
+```{r}
+model1 <- lm(Satisfaction~ProdQual)
+summary(model1)
+```
+### Inference: 
+  Regression Equation Yhat = 3.67593 + 0.41512 (Product Quality)
+  Variance Explained by the model is 23% (0.2365)
+  Product Quality is highly Significant @ 100% confidence Interval
+  Product Quality has high impact on dependent variable Satisfaction 
+```{r}
+model2 <- lm(Satisfaction~Hair$Ecom)
+summary(model2)
+```
+### Inference: 
+  Regression Equation Yhat = 5.2679 + 0.4427 (E-Commerce)
+  Variance Explained by the model is 5% (0.05868)
+  E-Commerce is highly Significant @ 99% confidence Interval
+  E-commerce also has high impact on dependent variable Satisfaction 
+```{r}
+model3 <- lm(Satisfaction~TechSup)
+summary(model3)
+```
+### Inference: 
+  Regression Equation Yhat = 6.44757 + 0.08768 (TechSup)
+  Variance Explained by the model is 1% (0.01268)
+  Technical Support is not Significant
+  Technical Support  doesn't has any major impact on dependent variable Satisfaction
+  
+```{r}
+model4 <- lm(Satisfaction~CompRes)
+summary(model4)
+```
+### Inference: 
+  Regression Equation Yhat = 3.68005 + 0.59499 (CompRes)
+  Variance Explained by the model is 36% (0.3639)
+  Complaint Resolution is highly Significant @ 100% confidence Interval
+  Complaint Resolution also has high impact on dependent variable Satisfaction 
+```{r}
+model5 <- lm(Satisfaction~Advertising)
+summary(model5)
+```
+
+### Inference: 
+  Regression Equation Yhat = 5.6259 + 0.3222 (Advertising)
+  Variance Explained by the model is 9% (0.09282)
+  Advertising is highly Significant @ 99% confidence Interval
+  Advertising also has impact on dependent variable Satisfaction 
+```{r}
+model6 <- lm(Satisfaction~ProdLine)
+summary(model6)
+```
+### Inference: 
+  Regression Equation Yhat = 4.02203 + 0.49887 (ProdLine)
+  Variance Explained by the model is 30% (0.3031)
+  Product Line is highly Significant @ 100% confidence Interval
+  Product Line also has high impact on dependent variable Satisfaction 
+```{r}
+model7 <- lm(Satisfaction~SalesFImage)
+summary(model7)
+```
+### Inference: 
+  Regression Equation Yhat = 4.02836 + 0.56466 (SalesFImage)
+  Variance Explained by the model is 25% (0.2511)
+  SalesForce Image is highly Significant @ 100% confidence Interval
+  SalesForce Image also has high impact on dependent variable Satisfaction 
+```{r}
+model8 <- lm(Satisfaction~ComPricing)
+summary(model8)
+```
+### Inference: 
+  Regression Equation Yhat = 8.03856 - 0.16068 (ComPricing)
+  Variance Explained by the model is 4% (0.04339)
+  Competitive Pricing is highly Significant @ 95% confidence Interval
+  Competitive Pricing also has some significant impact on dependent variable Satisfaction 
+```{r}  
+model9 <- lm(Satisfaction~WartyClaim)
+summary(model9)
+```
+### Inference: 
+  Regression Equation Yhat = 5.3581 + 0.2581 (WartyClaim)
+  Variance Explained by the model is 3% (0.03152)
+  Warranty Claim is highly Significant @ 90% confidence Interval
+  Warranty Claim also has some impact on dependent variable Satisfaction 
+```{r}
+model10 <- lm(Satisfaction~OrdBilling)
+summary(model10)
+```
+### Inference: 
+  Regression Equation Yhat = 4.0267 + 0.6762 (OrdBilling)
+  Variance Explained by the model is 27% (0.2718)
+  Order and Billing is highly Significant @ 100% confidence Interval
+  Order and Billing also has high impact on dependent variable Satisfaction 
+```{r}
+model11 <- lm(Satisfaction~DelSpeed)
+summary(model11)
+```
+### Inference: 
+  Regression Equation Yhat = 3.2352 + 0.9471 (Delivery Speed)
+  Variance Explained by the model is 33% (0.333)
+  Delivery Speed is highly Significant @ 100% confidence Interval
+  Delivery Speed also has high impact on dependent variable Satisfaction 
+
+## Inference Out of all the Models
+  Technical Support doesn't have much impact on the Satisfaction level of the customer
+  All other independent Variables have significant impact on the dependent variable 
+  Notably, DelSpeed,SalesFimage,ProdQual,CompRes,ProdLine are Highly Significant and Impactfull Vairable
+
+  Since the pressence of multi-collinearity is evident , its time to act on it using one of the methods namely Principal Component Analysis
+## PCA/ Factor Analysis
+### 1st Step: the correlation matrix to check 
+```{r}
+Cor <- cor(Hair[,c(-1,-13)])
+print(Cor)
+```
+  Its clear that all the variables are highly corelated with each other as we already saw it while checking multi-collinearity
+rcorr <- rcorr(as.matrix(Hair))
+```{r}
+library(corrplot)
+corrplot(Cor,method = "circle",type = "upper")
+```
+### Inference From Correlation Plot
+  Correlation coefficients greater than 0.3 in absolute value are indicative of acceptable correlations.
+  Product Quality and Product Line are positively Correlated (0.477)
+  Product Quality and Competitive Pricing are negatively Correlated (-0.401)
+  Ecom and Sales Force Image are very highly positively correlated (0.792)
+  Ecom and Advertising are  positively correlated (0.429)
+  Technical Support and Warranty Claim  are Highly Positively Correlated (0.797)
+  Complaint Resolution and Delivery Speed  are highly positively correlated (0.865)
+  Complaint Resolution and Order Billing are Highly positively Correlated (0.757)
+  Complaint Resolution and Product Line are positively Correlated (0.561)
+  Advertising and Sales Force Image are positively Correlated (0.542)
+  Product Line and Competitive Pricing are negatively Correlated (-0.495)
+  Product Line and Delivery Speed are positively Correlated (0.601)
+  Product Line and Order & Billing are positively Correlated (0.424)
+  Order Billing and Delivery Speed are Highly positively Correlated (0.751)
+
+### Step 2 - Factor Extraction using Kaizer Rule
+  Based on Correlation Matrix we confirmed the presence of Correlation and there is need for Factor Analysis
+  Now we need to figure out how many Factors are needed using scree plot
+  To decide on how many factors we need to represent the data, we use 2 statistical criteria: Eigen Values,and The Scree Plot.
+#### Eigen Value Computation
+```{r}
+library(nFactors)
+ev <- eigen(cor(Cor))
+print(ev)
+EIgenValue <- ev$values
+print(EIgenValue)
+```
+  The determination of the number of factors is usually done by considering only factors with Eigen values greater than 1. 
+  Factors with a variance less than 1 are no better than a single variable, since each variable is expected to have a variance of 1.
+  Here we have 3 eigen Values Greater than 1 so we can have 3 Factors.Lets check it with scree plot also.
+```{r}
+Factor<- c(1,2,3,4,5,6,7,8,9,10,11)
+scree <- data.frame(Factor,EIgenValue)
+plot(scree,main="Scree Plot",col = "Blue",ylim=c(0,6))
+lines(scree,col="Red")
+```
+  In Scree Plot we can clearly see the decreasing trend in the Eigen Value as the Factor Increases.
+  As per Kaizer Normalisation Rule "Any Eigen Value less than 1 is not a much of a Value to be considered"
+  So as per this rule we can omit Eigen Values which are Less than 1.
+  i.e.,we have 4 Factors to be extracted (as it is Given in Problem Statement)
+  Now lets find out the Component matrix using Principle Component Analysis
+```{r}
+library(psych)
+Unrotate <- principal(Hair[,c(-1,-13)],nfactors = 4,rotate = "none")
+print(Unrotate,digits = 3)
+```
+### Insights 
+  Eigen Value(SS Loadings) represents the largest Variance Summarized / reduction
+  Proportion Variance explains how much variance is explained by each Component 
+  PC1 explains 31.2%,PC2 explains 23.2%, PC3 explains 15.4%, PC4 explains 9.9%
+  Cummulative Proportion explains total Variance explained by all the components
+  Totally we have explained 100 % of information with 4 Variables.
+  Communality is the common Variance captured by all the Factors 
+  Communality gives how much variance explained by all the 4 Factors of every Variable.
+  eg.,91.4% of variance of Delivery Speed is explained by all the 4 Factors 
+  The Interpretability of Components in Unrotated Factor Loading is Difficult as many variables have High Loading(Corelated) in each Factors
+  It creates a amalgamation Effect of Variables in all the Factor 
+### Step 3 - Factor Rotation
+  Un-rotated factors are typically not very interpretable (most factors are correlated with many variables).
+  Factors are rotated to make them more meaningful and easier to interpret (each variable is associated with a minimal number of factors).
+  Different rotation methods may result in the identification of somewhat different factors.
+  The most popular rotational method is Varimax rotations.
+  Varimax use orthogonal rotations yielding uncorrelated factors/components.
+# Varimax attempts to minimize the number of variables that have high loadings on a factor. This enhances the interpretability of the factors.
+```{r}
+Rotate <- principal(Hair[,c(-1,-13)],nfactors = 4,rotate = "varimax")
+print(Rotate,digits = 3)
+```
+###  Interpretating Factors 
+  After rotation,To identify factors, group variables that have larger loadings for the same factor,and then name the factors based on the meaning of Variables 
+  the Factor Names are Purely Intuitional
+  Variables like Complaint Resolution(0.926),Order and Billing(0.864),Delivery Speed (0.938) are well explained by the Customer Service Factor(RC1)
+  Variables like E-Commerce(0.871),SalesForceImage(0.900),Advertising(0.742),competitive pricing(0.226) are well explained by the Marketing Factor (RC2)
+  Variables like Technical Support(0.939),warranty claim(0.931) are well explained by the Customer Support Factor (RC3)
+  Variables like Product Quality(0.876),Product Line(0.642) are well explained by Product Factor (RC4)
+### Labelling the Factors
+  Factor 1 is strongly correlated with Complaint Resolution(0.926),Order and Billing(0.864),Delivery Speed (0.938)
+  This means there are people who care about the "Customer Services" . Therefore we can Call it Customer Service Factor.
+  In Factor 2 is more correlated with E-Commerce(0.871),SalesForceImage(0.900),Advertising(0.742),competitive pricing(0.226)
+  This means there are people who care about the "Marketing Strategies" . Therefore we can Call it Marketing Factor.
+  Let's Visually Plot the Loadings and cross check our Inference
+  In Factor 3 is explains a lot about Technical Support(0.939),warranty claim(0.931)
+  This means there are people who care about the "Customer Support" . Therefore we can Call it Customer Support Factor.
+  In Factor 4 is explains more about Product Quality(0.876),Product Line(0.642)
+  This means there are people who care about the "Product and its quality" . Therefore we can Call it Product Factor.
+
+### Let's Check the Clustering of our Factors Visually
+```{r}
+plot(Rotate,row.names(Rotate$loadings),cex=1.0)
+```
+  Lets Combine our Factor Scores and Dependent Variable to form a Date Frame so that we can do Multiple Linear Regression.
+### Multiple Linear Regression analysis using the factors as Independent Variables
+```{r}
+MLR <- data.frame(Rotate$scores,Satisfaction)
+MLR.model <- lm(MLR$Satisfaction~RC1+RC2+RC3+RC4,data = MLR)
+summary(MLR.model)
+```
+### Model Interpretation
+  Regression Equation Yhat = 6.91800+0.61805(x1)+0.50973(x2)+0.06714(x3)+0.54032(x4)
+  where, X1 - Customer Service Factor,X2 - Marketting Factor,X3 - Customer Support Factor,X4 - Product Factor
+#### Understanding Slope 
+  If the Customer Service Factor score is increased by 1 unit, then the Satisfaction Rating is estimated to increase by 0.62 rating keeping Marketing Factor, Customer Support Factor and Product Factor as constant.
+  If the Marketing Factor Score is increased by 1 unit, then the Satisfaction Rating is estimated to increase by 0.50 rating keeping Customer Service Factor score, Customer Support Factor and Product Factor as constant.
+  If the Customer Support Factor Score is increased by 1 unit, then the Satisfaction Rating is estimated to increase by 0.067 rating keeping Customer Service Factor,Marketing Factor and Product Factor as constant.
+  If the Product Factor Score is increased by 1 unit, then the Satisfaction Rating is estimated to increase by 0.54 rating keeping Customer Service Factor,Marketing Factor and Customer Support Factor as constant.
+  From the MLR model summary it's clear that the Customer Support Factor is very less significant as its is less impactfull in predicting Dependent Variable Satisfaction.
+### Model Performance Metrics
+#### R-Square Interpretation
+  Multiple R- Squared - 0.6605 implies 66.05% of the Variation in Satisfaction Rating  is explained  by the 4 Factor Scores.
+  Overall Significance of the Model (Is there a Regression in the Population)
+  Regression has 4 DF and Total has 99 DF.Hence error or residual has 99-4 = 95 DF
+  Probability(F>46.21) = 2.2e-16(P-Value) is much smaller than alpha of 5% level 
+  Hence Reject the Null hypothesis of all betas are zero.Conclude atleast one beta is non-zero and hence accept the alternative hypothesis.
+  Therefore Overall there is Overwhelming Evidence that regression model exist in the Population.
+  Individual Coefficients are highly significant except Customer Support(RC3) as evidence by the T-Stats thats have extremely low P Values each one of them except Customer Support is much less than alpha of 5%
+  All Factors Considered the Regression Model is Robust and can be used for Predicitive Analytics 
+
+
+    
+
+
+
+
+
+
+
+
