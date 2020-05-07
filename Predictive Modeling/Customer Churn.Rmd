@@ -1,0 +1,435 @@
+---
+title: "Customer Churn"
+author: "Muthu Pandian G"
+date: "November 24, 2019"
+output: word_document
+---
+# Telecom Customer Churn Prediction Assessment
+
+## OBJECTIVE OF THE PROJECT:
+  Customer Churn is a burning problem for Telecom companies. 
+  In this project, we simulate one such case of customer churn where we work on a data of    postpaid customers with a contract.
+  The data has information about the customer usage behavior, contract details and the      payment details. 
+  The data also indicates which were the customers who canceled their service.
+  Based on this past data, we need to build a model which can predict whether a customer will cancel their service in the future or not.
+As a Analyst You are expected to do the following: 
+1.	EDA 
+2.	Build Models and compare them to get to the best one 
+3.	Model Comparison using Model Performance metrics & Interpretation
+4.	Actionable Insights
+5. 	Interpretation & Recommendations from the best model
+
+## Importing the Dataset
+```{r}
+setwd("D:/Great Lakes/Projects/Predictive Modeling")
+getwd()
+library(openxlsx)
+churn <- read.xlsx("Cellphone.xlsx",2,startRow = 1,colNames = TRUE)
+```
+
+##Understanding the data
+## Data Description
+The dataset has details on  3333 customers with 11 Variables.The Following Table Explains the Variable Name and Its Meaning.
+
+### Structure of Data
+```{r}
+str(churn)
+```
+we can see that all the Variables are taken as numerical Variable only,and we know that variables like Churn,Contract Renewal,Data Plan and Customer service calls are Categorical Variable. 
+so need to convert them to categorical variable.
+Let's Convert the class of the Numeric Variable which are supposed to be Categorical Variable to Factor
+```{r}
+churn$Churn <- as.factor(churn$Churn)
+churn$ContractRenewal <- as.factor(churn$ContractRenewal)
+churn$DataPlan <- as.factor(churn$DataPlan)
+churn$CustServCalls <- as.factor(churn$CustServCalls)
+```
+Now lets look at the Structure of our Dataset
+```{r}
+str(churn)
+```
+### Summary
+```{r}
+summary(churn)
+summary(churn$Churn)
+483/(2850+483)
+```
+Around 14 % of data has customers who have churned out. 
+## Checking NA Values/ Missing Values
+```{r}
+colSums(is.na(churn))
+```
+Luckily, we don't have any NA in our Dataset,then it's Time to check For Outlier.
+
+## Outlier Detection
+
+```{r}
+library(ggplot2)
+ggplot(churn,aes(x="",churn$AccountWeeks))+ 
+geom_boxplot(fill='green', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "AccountWeeks" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of AccountWeeks")
+
+ggplot(churn,aes(x="",churn$DataUsage))+ 
+geom_boxplot(fill='blue', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Data Usage" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Data Usage")
+
+ggplot(churn,aes(x="",churn$DayMins))+ 
+geom_boxplot(fill='yellow', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Day Minutes" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Day Minutes")
+
+ggplot(churn,aes(x="",churn$DayCalls))+ 
+geom_boxplot(fill='red', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Day Calls" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Day Calls")
+
+ggplot(churn,aes(x="",churn$MonthlyCharge))+ 
+geom_boxplot(fill='Purple', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Monthly Charge" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Monthly Charge")
+
+ggplot(churn,aes(x="",churn$OverageFee))+ 
+geom_boxplot(fill='Violet', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Overage Fee" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Over Age Fee")
+
+ggplot(churn,aes(x="",churn$RoamMins))+ 
+geom_boxplot(fill='grey', color="black",outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+ labs(x = "Roam Minutes" , y = "") + theme(plot.title = element_text(hjust = 0.5))+ggtitle("Boxplot of Roam Minutes")
+
+```
+  We Found out the existence of Outliers in the Following Variables: Account Weeks, Data Usage, Day Minutes,Day Calls, Monthly Charge, OverAge Fee, Roam Minutes 
+
+# Exploratory Data Analysis 
+## Univariate Analysis
+## Frequency Distribution of each Independent numerical Variable  
+```{r}
+ggplot(churn,aes(x=Churn))+geom_bar(fill = "#FF9999",colour = "Black")+ggtitle("churn")+theme(plot.title = element_text(hjust = 0.5))+xlab("Customer Churn")
+```
+Churn - There are 2850 (86%) customers who haven't Churned Out and 483(14%) customers who have churned out 
+```{r}
+ggplot(churn,aes(x=AccountWeeks))+geom_histogram(bins = 50,fill = "Blue",colour = "Black")+ggtitle("AccountWeeks")+theme(plot.title = element_text(hjust = 0.5))+xlab("AccountWeeks")
+```
+Account Weeks - The Number of Hours the customer had active accounts ranges from minimum of 1 week to maximum of 243 weeks.The Average Number of week lies around 101
+```{r}
+ggplot(churn,aes(x=ContractRenewal))+geom_bar(fill = "#E69F00",colour = "Black")+ggtitle("Contract Renewal")+theme(plot.title = element_text(hjust = 0.5))+xlab("Contract Renewal")
+```
+ ContractRenewal - There are 323(10%) customers who haven't renewed thier Contract and 3010(90%) customers who have renewed thier Contract
+```{r}
+ggplot(churn,aes(x=DataPlan))+geom_bar(fill = "#56B4E9",colour = "Black")+ggtitle("Data Plan")+theme(plot.title = element_text(hjust = 0.5))+xlab("Data Plan")
+```
+Data Plan - There are 2411(72%) customers who didn't have data Plan and 922(18%) customers who have data plan. It Shows that most of our customers don't use our Data Plans
+```{r}
+ggplot(churn,aes(x=DataUsage))+geom_histogram(bins = 50,fill = "Blue",colour = "Black")+ggtitle("Data Usage")+theme(plot.title = element_text(hjust = 0.5))+xlab("Data Usage")
+```
+Data Usage -The Maximum Data Used by our customers is 5.4 Gb, on an average our customers use 0.8 gb.
+```{r}
+ggplot(churn,aes(x = CustServCalls))+ geom_bar(fill = "#009E73",colour = "Black")+ ggtitle("Customer Service Calls") + theme(plot.title = element_text(hjust = 0.5))+xlab("Customer Service Calls")
+```
+Customer Service Calls - A lot of our customers atleast have one Customer service calls 
+```{r}
+ggplot(churn,aes(x=DayMins))+geom_histogram(bins = 50,fill = "purple",colour = "Black")+ggtitle("Day Minutes")+theme(plot.title = element_text(hjust = 0.5))+xlab("Data Minutes")
+```
+DayMins - On an average 180 Minutes per day is spent on Call by our customers,it reaches upto 3510 Minutes per day.
+```{r}
+ggplot(churn,aes(x=DayCalls))+geom_histogram(bins = 50,fill = "violet",colour = "Black")+ggtitle("Day Calls")+theme(plot.title = element_text(hjust = 0.5))+xlab("Day Calls")
+```
+Daycalls - On an average around 100 Day Time calls are spoken by our cutomers,it reaches upto 165 Day Calls per day. 
+```{r}
+ggplot(churn,aes(x=MonthlyCharge))+geom_histogram(bins = 50,fill = "green",colour = "Black")+ggtitle("Monthly Charge")+theme(plot.title = element_text(hjust = 0.5))+xlab("Monthly Charge")
+```
+MonthlyCharge - Average Monthly Bill comes around 57 rupees per month and it reaches upto 112 rupees per month.
+```{r}
+ggplot(churn,aes(x=OverageFee))+geom_histogram(bins = 50,fill = "yellow",colour = "Black")+ggtitle("Overage Fee")+theme(plot.title = element_text(hjust = 0.5))+xlab("Overage Fee")
+```
+Overage Fee - An Overage Fee is an extra amount of money that you have to pay for using more of something than was expected or agreed.The Average Overage Fee in last 12 Months is 10rupees and it reaches upto 19 rupees.
+```{r}
+ggplot(churn,aes(x=RoamMins))+geom_histogram(bins = 50,fill = "Red",colour = "Black")+ggtitle("Roaming Minutes")+theme(plot.title = element_text(hjust = 0.5))+xlab("Roaming Minutes")
+```
+RoamMins - Average number of Roaming Minutes is 10 minutes and it reaches a maximum of 20 Minutes.
+
+## Bi Variable analysis
+```{r}
+ggplot(churn,aes(AccountWeeks,fill = Churn))+geom_bar()+ggtitle("AccountWeeks vs Churn")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Account Weeks")
+```
+ From the Graph, we can clearly see that Lesser the Customer stays higher the chance of Churning Out
+ 
+```{r}
+ggplot(churn,aes(ContractRenewal,fill = Churn))+geom_bar()+ggtitle("Contract Renewal vs Churn")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Contract Renewal")
+```
+As expected people who have renewed the contract has less possibility of churning out
+```{r}
+ggplot(churn,aes(DataPlan,fill = Churn))+geom_bar()+ggtitle("DataPlan vs Churn")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("DataPlan")
+```
+  Here,The customer who doesn't have data plan have churned out lot more than the customers who have data plan.
+```{r}
+ggplot(churn,aes(CustServCalls,fill = Churn))+geom_bar()+ggtitle("Customer Service Call vs Churn")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Customer Service Calls")
+```
+  Higher the Customer Service Calls made by the Customers Higher the Possibility of churning out
+  
+## Multi-Collinearity
+Let's checkout the existence of Multi-collinearity between the Independent variables 
+```{r}
+library(corrgram)
+library(corrplot)
+library(car)
+corrplot::corrplot(corrgram(churn[,-c(1,3,4,6)]))
+```
+  From the above plot,it's clear that the Variable "Monthly Charge" is positively correlated with Data usage(0.78), Day minutes(0.567) and slightly correlated with OverageFee(0.28), Roam Minutes (0.11). 
+Roam Minutes has a 0.16 correlation with Data Usage.
+```{r}
+cor(churn[,-c(1,3,4,6)])
+```
+  It's Evident that Multicollinearity is exist in the dataset.Now, let's calculate the VIF value and decide how to treat Multi-Collinearity
+```{r}
+model <- glm(Churn~.,churn,family = "binomial")
+summary(model)
+vif(model)
+```
+As hinted in the Correlation Matrix plot,we can clearly see that Monthly Charge has high Vif
+Let's remove the Monthly charge,dataplan,dataUsage and check the VIF for other predictors
+
+```{r}
+churn1 <- churn[,-c(4,5,9)]
+model1 <- glm(Churn~.,churn1,family = "binomial")
+vif(model1)
+```
+The Vif of all the other variables are around 1,i.e. they are less correlated with each other.
+
+```{r}
+summary(model1)
+```
+From the model summary, it's clear that Account weeks,Day Calls are least significant variables, so let's remove those variables also.
+
+### Key-Insights From EDA 
+## Uni-Variate Analysis:
+  We have 14% of customers who have churned out and 86% of customers who haven't churned out in our dataset
+  Majority of our customers (72%) don't have a Data Plan.It shows our customers primary need is Phone calls which is confirmed by Day Minutes Variable.
+  On an Average Our Customers spend 3 hours per day on Phone Calls
+
+## Bi-Variate Analysis:
+  Higher the Customer Service Calls made by the Customers Higher the Possibility of churning out
+  The customer who doesn't have data plan have churned out lot more than the customers who have data plan.
+
+## Multi-collinearity and Outliers:
+  We Found out the existence of Outliers in the Following Variables: Account Weeks, Data Usage, Day Minutes,Day Calls, Monthly Charge, OverAge Fee, Roam Minutes 
+  Then, we figured out that the Monthly Charge, Data Plan, DataUsage are highly correlated with the other variables and causing Misintepretation.So we removed them from our Data.
+
+  Let's Build the Model with the variables which have Low Vif,High Significance and check how it performs on the training and testing dataset.
+
+### Logistic Regression
+
+```{r}
+library(caTools)# Used for Spliting the Data 
+set.seed(1234)
+churn2 <- churn[,c(1,3,6,7,10)]
+split <- sample.split(churn2$Churn, SplitRatio = 0.7)
+train <- subset(churn2,split== TRUE)
+test <- subset(churn2,split == FALSE)
+LogTrainModel <- glm(Churn~.,train,family = "binomial")
+summary(LogTrainModel)
+```
+
+From the output above, the coefficients table shows the beta coefficient estimates and their significance levels. Columns are:
+  Estimate: Estimate column gives the intercept (b0: -4.585977)  and the beta coefficient estimates associated to each predictor variable
+  Std.Error: The standard error of the coefficient estimates. This represents the accuracy of the coefficients. The larger the standard error, the less confident we are about the estimate.
+  z value: the z-statistic, which is the coefficient estimate (column 2) divided by the standard error of the estimate (column 3)
+  Pr(>|z|): The p-value corresponding to the z-statistic. The smaller the p-value, the more significant the estimate is.
+  It's Evident That ContractRenewal,CustServCalls(4,5,6,7),DayMins and Overage Fee are Highly Significant and have High Impact in predicting whether the customer churn out or not.
+
+Now Let's see how our model performs on both Training and Test Dataset
+Logistic regression does not return directly the class of observations. 
+  It allows us to estimate the probability (p) of class membership.The probability will range between 0 and 1.
+  We need to decide the threshold probability at which the category flips from one to the other.
+```{r}
+Log_Prediction_Train <- predict(LogTrainModel,data = "train",type = "response")
+
+plot(train$Churn,Log_Prediction_Train)
+```
+    From the above Plot,we can clearly see that the customers who haven't churned out lies within 0-0.3.  
+  
+  So, let's take the threshold of 0.3. The Probabilty predicted by our Model above 0.3 will be taken as 1 (Customers has high chance of Churn Out)
+
+## Model Perfomance on Training Data
+## Confusion Matrix
+
+```{r}
+Log_model.predicted <- ifelse(Log_Prediction_Train<0.3,0,1)
+Logmodel <- table(train$Churn,Log_model.predicted)
+print(Logmodel)
+```
+
+```{R}
+# Accuracy 
+accuracy <- round(sum(diag(Logmodel))/sum(Logmodel),2)
+print(accuracy)
+
+# Sensitivity 
+sensitivity <- round(143/(143+170),2)
+print(sensitivity)
+
+# Specificity
+specificity <-round(1825/(1825 + 195),2)
+print(specificity)
+```
+## Confusion Matrix Inference on Training Dataset:
+  Based On Confusion Matrix,
+  With 84% accuracy on the Training Dataset Our Model Done well(90%) in predicting the 0 (Customers who haven't churn out) than in Predicting(46%) the 1 (Customers who have Churn out).
+
+Now Let's Check Our Model with other Model Perfomance measures like AUC, Gini,KS
+## AUC & Gini
+```{R}
+library(ROCR)
+ROCRpred <- prediction(Log_model.predicted, train$Churn)
+ROCRperf <- performance(ROCRpred, 'tpr','fpr')
+plot(ROCRperf,colorize = TRUE, text.adj = c(-0.2,1.7),main="AUC Curve of LR MODEL ON TRAINING DATASET",xlab="False Positive Rate",ylab="True Positive Rate")
+auc = performance(ROCRpred,"auc");
+auc = as.numeric(auc@y.values)
+print(auc)
+
+library(ineq)
+gini = ineq(Log_model.predicted, type="Gini")
+print(gini)
+```
+### Thumb Rule - Larger the auc and gini coefficient better the model is. 
+    We have a auc of 67% and gini coefficient of 87% which conveys the message that our model has done a Ok Job in training datset.
+
+## kS
+KS Statistic or Kolmogorov-Smirnov statistic is the maximum difference between the cumulative true positive and cumulative false positive rate.It is often used as the deciding metric to judge the efficacy of models in credit scoring. 
+The higher the ks_stat, the more efficient is the model at capturing the Ones. 
+This should not be confused with the ks.test function.
+
+```{r}
+KS = max(ROCRperf@y.values[[1]]-ROCRperf@x.values[[1]]) # The Maximum the Better 
+print(KS)
+```
+  Here,In Training Dataset our Logistic Model done Poorly(0.34) in Predicting the customers who will cancel our services.
+
+## Model Perfomrance on Test Data
+# Confusion Matrix 
+```{r}
+Log_Prediction_Test <- predict(LogTrainModel,test,type = "response")
+Log_model.predicted1 <- ifelse(Log_Prediction_Test <0.3,0,1)
+Logmodel1 <- table(test$Churn,Log_model.predicted1)
+print(Logmodel1)
+
+# Accuracy 
+Test_accuracy <- round(sum(diag(Logmodel1))/sum(Logmodel1),2)
+print(Test_accuracy)
+
+# Sensitivity 
+sensitivity <- round(60/(60+71),2)
+print(sensitivity)
+
+# Specificity
+specificity <-round(784/(784 + 85),2)
+print(specificity)
+```
+## Confusion Matrix Inference on Test Dataset:
+  Based On Confusion Matrix,
+With 84% accuracy on the Training Dataset Our Logistic Model Done well(90%) in predicting the 0 (Customers who haven't churn out) than in Predicting(46%) the 1 (Customers who have Churn out)as exactly the same Prediction in the Training Dataset.
+
+Now Let's Check Our Logistic Model with other Model Perfomance measures like AUC, Gini,KS
+# AUC & GINI
+```{r}
+TestROCRpred <- prediction(Log_model.predicted1, test$Churn)
+TestROCRperf <- performance(TestROCRpred, 'tpr','fpr')
+plot(TestROCRperf,colorize = TRUE, text.adj = c(-0.2,1.7),main="AUC Curve of LR MODEL ON TESTING DATASET",xlab="False Positive Rate",ylab="True Positive Rate")
+Testauc = performance(TestROCRpred,"auc");
+Testauc = as.numeric(Testauc@y.values)
+print(Testauc)
+# Gini on Test dataset
+Testgini = ineq(Log_model.predicted1, type="Gini")
+print(Testgini)
+```
+## Thumb Rule - Larger the auc and gini coefficient better the model is. 
+  We have a auc of 67% and gini coefficient of 87% which conveys the message that our model has done a Ok Job in the test datset.
+# kS
+The higher the ks_stat, the more efficient is the model at capturing the Ones. 
+```{r}
+TestKS = max(TestROCRperf@y.values[[1]]-TestROCRperf@x.values[[1]]) # The Maximum the Better 
+print(TestKS)
+```
+### CART MODEL
+Here,In Test Dataset our Logistic Model done Poorly(0.33) in Predicting the customers who will cancel our services.
+Our Model Has Performed exactly the Sameway in both the train and Test dataset.
+
+Now, Let's Build a KNN Model and Measure it's Performance 
+
+# KNN 
+```{r}
+library(class)
+knnmodel <- knn(train,test,train$Churn,k=5)
+summary(knnmodel)
+```
+# Interpretation:
+  After Trail and Error Method @ k = 5 the Model performs well in predicting Both 0 (Customer who will not cancel) and 1 (Customer who will cancel) when compared to Logistic Regression model.
+  Our Model Predicted 935 '0' and 65 '1'.Now, Let's Check how well it have performed by using Confusion Matrix
+
+## Confusion Matrix 
+```{r}
+knntable <- table(test$Churn,knnmodel)
+print(knntable)
+# Accuracy 
+knnaccuracy <- round(sum(diag(knntable))/sum(knntable),2)
+print(knnaccuracy)
+# Sensitivity 
+sensitivity <- round(55/(55+10),2)
+print(sensitivity)
+# Specificity
+specificity <-round(845/(845 + 90),2)
+print(specificity)
+```
+
+  With 90% accuracy our KNN-Model has Done well in predicting both the 0 (90%) (Customers who haven't churn out) 1 (85%) (Customers who have Churn out).
+
+Let's Look, How Naive Bayes Model works on this Dataset.
+
+## Naive Bayes 
+  The Naive Bayes is a classification algorithm that is suitable for binary and multiclass classification.
+  Generally,Naïve Bayes performs well in cases of categorical input variables compared to numerical variables.
+  So a version of Naive Bayes algorithm has been created where the predicted variable do not have to be descrete they can be continuous also.
+  However,it is useful for making predictions and forecasting data based on historical results.
+  so therefore we can use Naive Bayes Algorithm for this use case.Let's Build the model and see its performance on the Train and Test data.
+
+```{r}
+library(e1071)
+NBModel <- naiveBayes(Churn~.,data = train)
+print(NBModel)
+NBPredictTrain <- predict(NBModel,newdata = train)
+```
+  The model creates the conditional probability for each feature separately. 
+  We also have the a-priori probabilities which indicates the distribution of our data. 
+  Let's calculate how we perform on the Training data.
+
+# Confusion Matrix on Train Dataset
+```{r}
+NBTrainTable <- table(train$Churn,NBPredictTrain)
+print(NBTrainTable)
+# Accuracy 
+NBTrainaccuracy <- round(sum(diag(NBTrainTable))/sum(NBTrainTable),2)
+print(NBTrainaccuracy)
+# Sensitivity 
+NBTrainsensitivity <- round(57/(57+38),2)
+print(NBTrainsensitivity)
+# Specificity
+NBTrainspecificity <-round(1957/(1957 + 281),2)
+print(NBTrainspecificity)
+```
+Based On Confusion Matrix,
+  With 86% accuracy on the Training Dataset Our Naive Bayes Model Done well in predicting the 0 (87%) (Customers who haven't churn out) than in Predicting the 1 (60%) (Customers who have Churn out)
+  
+Let's Look, how the Naive Bayes Model performs on the Test Data set 
+```{r}
+NBTestPredict <- predict(NBModel,newdata = test)
+```
+# Confusion Matrix on Test Dataset
+
+```{r}
+NBTestTable <- table(test$Churn,NBTestPredict)
+print(NBTestTable)
+# Accuracy 
+NBTestaccuracy <- round(sum(diag(NBTestTable))/sum(NBTestTable),2)
+print(NBTestaccuracy)
+
+# Sensitivity 
+NBTestsensitivity <- round(28/(28+29),2)
+print(NBTestsensitivity)
+
+# Specificity
+NBTestspecificity <-round(826/(826 + 117),2)
+print(NBTestspecificity)
+```
+Based On Confusion Matrix,
+  With 85% accuracy on the Test Dataset Our Naive Bayes Model Done well in predicting the 0 (88%) (Customers who haven't churn out)than in Predicting the 1 (49%) (Customers who have Churn out)
+
+
