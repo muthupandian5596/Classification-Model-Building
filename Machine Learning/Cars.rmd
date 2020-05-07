@@ -1,0 +1,663 @@
+---
+title: "CAR"
+author: "Muthu Pandian G"
+date: "December 25, 2019"
+output: word_document
+---
+
+## OBJECTIVE OF THE PROJECT:
+# This project requires you to understand what mode of transport employees prefers to commute 
+# to their office. 
+# The attached data 'Cars.csv' includes employee information about their mode of transport 
+# as well as their personal and professional details like age, salary, work exp.
+# We need to predict whether or not an employee will use Car as a mode of transport.
+# Also, which variables are a significant predictor behind this decision.
+
+#Following is expected out of the candidate in this assessment.
+
+#EDA (15 Marks)
+# Perform an EDA on the data 
+# Illustrate the insights based on EDA 
+# Check for Multicollinearity - Plot the graph based on Multicollinearity & treat it
+# Data Preparation 
+
+# Prepare the data for analysis (SMOTE)
+# Modeling 
+
+# Create multiple models and explore how each model perform using appropriate model performance metrics
+# KNN 
+# Naive Bayes (is it applicable here? comment and if it is not applicable, 
+# how can you build an NB model in this case?
+# Logistic Regression
+# Apply both bagging and boosting modeling procedures to create 2 models and compare its accuracy with the best model of the above step. 
+# Actionable Insights & Recommendations 
+# Summarize your findings from the exercise in a concise yet actionable note
+
+## Importing the Dataset
+```{r}
+setwd("D:/Great Lakes/Projects/Machine Learning")
+getwd()
+cars <- read.csv("cars.csv",header = TRUE)
+```
+
+##Understanding the data
+## Data Description
+The dataset has details on  418 employees details with 9 Variables.
+### Structure of Data
+```{r}
+str(cars)
+```
+We see that License,Engineer,MBA Variables are taken as numerical variable.
+We need to convert it to categorical variable.
+```{r}
+cars$license <- as.factor(cars$license)
+cars$Engineer <- as.factor(cars$Engineer)
+cars$MBA <- as.factor(cars$MBA)
+```
+Now lets look at the Structure of our Dataset
+```{r}
+str(cars)
+```
+### Summary
+```{r}
+summary(cars)
+
+```
+We have 19 % of Employees who commute via thier own two wheelers and 8 % of employees via own car and 71 % of employees via Public Transport
+## Checking NA Values/ Missing Values
+```{r}
+colSums(is.na(cars))
+```
+We have only 1 Na value in our Entire dataset. So removing it won't affect our dataset.
+```{r}
+cars<- na.omit(cars)
+colSums(is.na(cars))
+```
+## Outlier Detection
+Since, we need to predict whether or not an employee will use Car as a mode of transport
+We need to convert the employees who use Public Transport and 2 Wheeler into one Category and car users into one category.
+```{r}
+cars$Transport <- ifelse(cars$Transport == "Car",1,0)
+cars$Transport <- as.factor(cars$Transport)  
+```
+# Exploratory Data Analysis 
+## Univariate Analysis
+## Frequency Distribution of each Independent numerical Variable  
+
+```{r}
+library(ggplot2)
+ggplot(cars,aes(x=Age))+geom_histogram(fill = "#FF9999",colour = "Black")+ggtitle("Age")+theme(plot.title = element_text(hjust = 0.5))+xlab("Employee Age")
+```
+Age - Most of our Employee are younger as thier average age is around 27.
+```{r}
+ggplot(cars,aes(x=Gender))+geom_bar(bins = 50,fill = "Blue",colour = "Black")+ggtitle("Gender")+theme(plot.title = element_text(hjust = 0.5))+xlab("Employee Gender")
+```
+Gender - Our Employee base has lot of Males(71%) than Females (29%) 
+```{r}
+ggplot(cars,aes(x=Engineer))+geom_bar(fill = "#E69F00",colour = "Black")+ggtitle("Engineer Graduate")+theme(plot.title = element_text(hjust = 0.5))+xlab("Engineer")
+```
+Engineer - Around 75% of our Employee are engineer graduates and only 25% Employee are non- engineers
+```{r}
+ggplot(cars,aes(x=MBA))+geom_bar(fill = "#56B4E9",colour = "Black")+ggtitle("MBA Graduate")+theme(plot.title = element_text(hjust = 0.5))+xlab("MBA")
+```
+MBA - Though,we have lot of Engineer graduates as our Employees but we have only 27% of MBA Graduates in our company.
+
+```{r}
+ggplot(cars,aes(x=Work.Exp))+geom_histogram(bins = 50,fill = "Blue",colour = "Black")+ggtitle("Work Experience")+theme(plot.title = element_text(hjust = 0.5))+xlab("Work Experience")
+```
+Work Experience - Employee Work Experience varies from 0 - 25years and on an average our employees have 5 years of work experience
+
+```{r}
+ggplot(cars,aes(x = Salary))+ geom_histogram(fill = "#009E73",colour = "Black")+ ggtitle("Salary Range") + theme(plot.title = element_text(hjust = 0.5))+xlab("Salary Range")
+```
+Salary - Employee Salary ranges from 6.50 to 57 and on an Average our Employee get's a salary of 15.42. 
+
+```{r}
+ggplot(cars,aes(x=Distance))+geom_histogram(bins = 50,fill = "purple",colour = "Black")+ggtitle("Distance")+theme(plot.title = element_text(hjust = 0.5))+xlab("Distance")
+```
+Distance - Employee commute Distance ranges from 3.2 to 23.4 kilometers and on an average our Employee commutes a distance of 11.3 kilometers
+
+```{r}
+ggplot(cars,aes(x=license))+geom_bar(fill = "violet",colour = "Black")+ggtitle("license")+theme(plot.title = element_text(hjust = 0.5))+xlab("license")
+```
+license - Only 20% of our Employee has License, which is quite surprising.
+
+```{r}
+ggplot(cars,aes(x=Transport))+geom_bar(fill = "green",colour = "Black")+ggtitle("Transport")+theme(plot.title = element_text(hjust = 0.5))+xlab("Transport")
+```
+Transport - We have 19 % of Employees who commute via thier own two wheelers and 8 % of employees via own car and 71 % of employees via Public Transport
+
+## Bi Variable analysis
+
+```{r}
+ggplot(cars,aes(Age,fill = Transport))+geom_bar()+ggtitle("Age vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Age")
+```
+From the plot, it's evident that employee whose age above 30 are the ones who use car as a mode of transport and most employees are using public transport only.
+```{r}
+ggplot(cars,aes(Gender,fill = Transport))+geom_bar()+ggtitle("Gender vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Gender")
+```
+Out of 297 Male employees only 29 Male employees are driving Car and out of 120 Female employees only 6 Females are commuting via car to the office.
+
+```{r}
+ggplot(cars,aes(Engineer,fill = Transport))+geom_bar()+ggtitle("Engineer vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Engineer")
+```
+Out of 313 Engineer graduates, only 30 graduates are commuting to the office via car and only 5 out of 104 non engineers own a car
+```{r}
+ggplot(cars,aes(MBA,fill = Transport))+geom_bar()+ggtitle("MBA vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("MBA")
+```
+Out of 109 MBA graduates, only 9 graduates are commuting to the office via car and  26 out of 308 non MBA graduates own a car 
+```{r}
+ggplot(cars,aes(Work.Exp,fill = Transport))+geom_histogram(bins = 30)+ggtitle("Work Exp vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Work Exp")
+```
+As expected, Higher the work experience higher the chance of commuting to the office via car.
+```{r}
+ggplot(cars,aes(Salary,fill = Transport))+geom_histogram(bins = 30)+ggtitle("Salary vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Salary")
+```
+```{r}
+ggplot(cars,aes(Distance,fill = Transport))+geom_histogram(bins = 30)+ggtitle("Distance vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Distance")
+```
+Higher the distance, more the possibility of commuting to the office via car.
+```{r}
+ggplot(cars,aes(license,fill = Transport))+geom_bar()+ggtitle("License vs Transport")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("License")
+```
+As expected, Most of the non licensed people uses Public Transport as the way of commute to thier offices and 29 out of 85 licensed employee uses car as a mode of tramsport.
+
+## Multi-Collinearity
+Let's checkout the existence of Multi-collinearity between the Independent variables 
+```{r}
+library(corrgram)
+library(corrplot)
+library(car)
+corrplot::corrplot(corrgram(cars[,-c(2,3,4,8,9)]))
+```
+
+```{r}
+cor(cars[,-c(2,3,4,8,9)])
+```
+It's Evident that Multicollinearity is exist in the dataset.Now, let's calculate the VIF value and decide how to treat Multi-Collinearity
+
+```{r}
+model <- glm(Transport~.,cars,family = "binomial")
+summary(model)
+vif(model)
+```
+
+As a rule of thumb, a VIF value that exceeds 5 or 10 indicates a problematic amount of collinearity"
+As hinted in the Correlation Matrix plot,we can clearly see that Work Experience and salary has high Vif
+Let's remove the Age,Work Experience and check the VIF for other predictors
+
+```{r}
+cars1 <- cars[,-c(1,5)]
+model1 <- glm(Transport~.,cars1,family = "binomial")
+vif(model1)
+```
+The Vif of all the other variables are around 1,i.e. they are less correlated with each other.
+
+### Key-Insights From EDA 
+## Uni-Variate Analysis:
+Age - Most of our Employee are younger as thier average age is around 27.
+Gender - Our Employee base has lot of Males(71%) than Females (29%) 
+Engineer - Around 75% of our Employee are engineer graduates and only 25% Employee are non- engineers
+MBA - Though,we have lot of Engineer graduates as our Employees but we have only 27% of MBA Graduates in our company.
+Distance - Employee commute Distance ranges from 3.2 to 23.4 kilometers and on an average our Employee commutes a distance of 11.3 kilometers
+license - Only 20% of our Employee has License, which is quite surprising.
+Transport - We have 19 % of Employees who commute via thier own two wheelers and 8 % of employees via own car and 71 % of employees via Public Transport
+
+## Bi-Variate Analysis:
+Employee whose age above 30 are the ones who use car as a mode of transport and most employees are using public transport only.
+Out of 297 Male employees only 29 Male employees are driving Car and out of 120 Female employees only 6 Females are commuting via car to the office.
+Out of 313 Engineer graduates, only 30 graduates are commuting to the office via car and only 5 out of 104 non engineers own a car
+Out of 109 MBA graduates, only 9 graduates are commuting to the office via car and  26 out of 308 non MBA graduates own a car 
+As expected, Higher the work experience higher the chance of commuting to the office via car.
+As expected, Higher the Salary higher the chance of commuting to the office via car. 
+Higher the distance, more the possibility of commuting to the office via car.
+As expected, Most of the non licensed people uses Public Transport as the way of commute to thier offices and 29 out of 85 licensed employee uses car as a mode of tramsport.
+
+## Multi-collinearity:
+Then, we figured out that the Work Experience,Salary are highly correlated with the other variables and causing Misintepretation.So we removed them from our Data.
+
+
+## Data Preparation 
+Before Building a model, let's check the imbalance of our Dataset.
+```{r}
+prop.table(table(cars1$Transport))
+```
+From the above output, it's pretty evident that we have high unbalanced classifiers and we need to treat the imbalance by SMOTE Method.
+
+## SMOTE (Synthetic Minority Oversampling TEchnique)
+```{r}
+library("DMwR")
+smoted_data <- SMOTE(Transport~.,cars1, perc.over=100, perc.under=600, k=5)
+prop.table(table(smoted_data$Transport))
+```
+After we did SMOTE we have increased our minority class level from 8% to 25%. 
+By doing so we have made the data with more balanced classifiers.
+
+## Model Building
+Now,Let's Build the Model with the Smoted data and check how it performs on the training and testing dataset.
+```{r}
+library(caTools)# Used for Spliting the Data 
+set.seed(1234)
+split <- sample.split(smoted_data$Transport, SplitRatio = 0.7)
+train <- subset(smoted_data,split== TRUE)
+test <- subset(smoted_data,split == FALSE)
+LogTrainModel <- glm(Transport~Gender+Engineer+MBA+Distance+license,train,family = "binomial")
+summary(LogTrainModel)
+vif(LogTrainModel)
+```
+Now Let's see how our model performs on both Training and Test Dataset
+Logistic regression does not return directly the class of observations. 
+It allows us to estimate the probability (p) of class membership.The probability will range between 0 and 1.
+We need to decide the threshold probability at which the category flips from one to the other.
+
+```{r}
+Log_Prediction_Train <- predict(LogTrainModel,data = "train",type = "response")
+
+plot(train$Transport,Log_Prediction_Train)
+
+```
+From the above Plot,we can clearly see that most employers who use Public Transport and 2-wheeler as a mode of transport lies within 0-0.4.  
+  
+So, let's take the threshold of 0.4. The Probabilty predicted by our Model above 0.4 will be taken as 1 (Employees who use car as a mode of transport)
+
+## Model Perfomance on Training Data
+
+```{r}
+Log_model.predicted <- ifelse(Log_Prediction_Train<0.4,0,1)
+Logmodel <- table(train$Transport,Log_model.predicted)
+print(Logmodel)
+```
+## Confusion Matrix
+```{r}
+#Accuracy 
+accuracy <- round(sum(diag(Logmodel))/sum(Logmodel),2)
+print(accuracy)
+
+# Sensitivity 
+sensitivity <- round(44/(44+9),2)
+print(sensitivity)
+# 0.83
+# Specificity
+specificity <-round(138/(138 + 5),2)
+print(specificity)
+#0.97
+```
+
+Based On Confusion Matrix,With 93% accuracy on the Training Dataset,Our model has done well in predicting both the 0 (0.97) (Employees who use Public Transport and 2-wheeler) and 1 (83%) (Employees who use car as a mode of transport).
+Now, Let's Check Our Model with other Model Perfomance measures like AUC, Gini,KS
+
+## AUC & Gini
+```{r}
+library(ROCR)
+ROCRpred <- prediction(Log_model.predicted, train$Transport)
+ROCRperf <- performance(ROCRpred, 'tpr','fpr')
+plot(ROCRperf,colorize = TRUE, text.adj = c(-0.2,1.7),main="AUC Curve of LR MODEL ON TRAINING DATASET",xlab="False Positive Rate",ylab="True Positive Rate")
+auc = performance(ROCRpred,"auc");
+auc = as.numeric(auc@y.values)
+print(auc)
+
+library(ineq)
+gini = ineq(Log_model.predicted, type="Gini")
+print(gini)
+```
+### Thumb Rule - Larger the auc and gini coefficient better the model is. 
+We have a auc of 92% and gini coefficient of 72% which conveys the message that our model has done a Ok Job in training datset.
+
+## kS
+KS Statistic or Kolmogorov-Smirnov statistic is the maximum difference between the cumulative true positive and cumulative false positive rate.It is often used as the deciding metric to judge the efficacy of models in credit scoring. 
+The higher the ks_stat, the more efficient is the model at capturing the Ones. 
+This should not be confused with the ks.test function.
+```{r}
+KS = max(ROCRperf@y.values[[1]]-ROCRperf@x.values[[1]]) # The Maximum the Better 
+print(KS)
+```
+Here,In Training Dataset our Logistic Model done a good job (0.83) in Predicting the Employees who use car as a mode of transport.
+
+## Model Performance on Test Data
+# Confusion Matrix 
+```{r}
+Log_Prediction_Test <- predict(LogTrainModel,test,type = "response")
+Log_model.predicted1 <- ifelse(Log_Prediction_Test <0.4,0,1)
+Logmodel1 <- table(test$Transport,Log_model.predicted1)
+print(Logmodel1)
+
+# Accuracy 
+Test_accuracy <- round(sum(diag(Logmodel1))/sum(Logmodel1),2)
+print(Test_accuracy)
+
+# Sensitivity 
+sensitivity <- round(20/(20+4),2)
+print(sensitivity)
+
+# Specificity
+specificity <-round(59/(59 + 1),2)
+print(specificity)
+```
+
+## Confusion Matrix Inference on Test Dataset:
+Based On Confusion Matrix,With 94% accuracy on the Training Dataset,Our model has done well in predicting both the 0 (98%) (Employees who use Public Transport and 2-wheeler) and 1 (83%) (Employees who use car as a mode of transport).
+
+Now Let's Check Our Logistic Model with other Model Perfomance measures like AUC, Gini,KS
+
+# AUC & GINI
+```{r}
+TestROCRpred <- prediction(Log_model.predicted1, test$Transport)
+TestROCRperf <- performance(TestROCRpred, 'tpr','fpr')
+plot(TestROCRperf,colorize = TRUE, text.adj = c(-0.2,1.7),main="AUC Curve of LR MODEL ON TESTING DATASET",xlab="False Positive Rate",ylab="True Positive Rate")
+Testauc = performance(TestROCRpred,"auc");
+Testauc = as.numeric(Testauc@y.values)
+print(Testauc)
+# Gini on Test dataset
+Testgini = ineq(Log_model.predicted1, type="Gini")
+print(Testgini)
+```
+## Thumb Rule - Larger the auc and gini coefficient better the model is. 
+We have a auc of 94% and gini coefficient of 71% which conveys the message that our model has done a good Job in the test datset.
+
+# kS
+The higher the ks_stat, the more efficient is the model at capturing the Ones. 
+```{r}
+TestKS = max(TestROCRperf@y.values[[1]]-TestROCRperf@x.values[[1]]) # The Maximum the Better 
+print(TestKS)
+```
+Here,In Test Dataset our Logistic Model done Poorly(0.88) in Predicting the employees who will use car as a mode of transport.
+
+Our Model Has almost performed  the Sameway in both the train and Test dataset.
+
+Now, Let's Build a KNN Model and Measure it's Performance 
+
+# KNN 
+```{r}
+library(class)
+knntrain <- train
+knntest <- test
+knntrain$Gender <- as.numeric(knntrain$Gender) 
+knntrain$Engineer <- as.numeric(knntrain$Engineer)
+knntrain$MBA <- as.numeric(knntrain$MBA)
+knntrain$license <- as.numeric(knntrain$license)
+knntrain$Transport <- as.numeric(knntrain$Transport)
+str(knntrain)
+knntest$Gender <- as.numeric(knntest$Gender) 
+knntest$Engineer <- as.numeric(knntest$Engineer)
+knntest$MBA <- as.numeric(knntest$MBA)
+knntest$license <- as.numeric(knntest$license)
+knntest$Transport <- as.numeric(knntest$Transport)
+str(knntest)
+knntrain$Transport[knntrain$Transport == 1] <- 0
+knntrain$Transport[knntrain$Transport == 2] <- 1
+knntrain$Gender[knntrain$Gender == 1] <- 0
+knntrain$Gender[knntrain$Gender == 2] <- 1
+knntrain$Engineer[knntrain$Engineer == 1] <- 0
+knntrain$Engineer[knntrain$Engineer == 2] <- 1
+knntrain$MBA[knntrain$MBA == 1] <- 0
+knntrain$MBA[knntrain$MBA == 2] <- 1
+knntrain$Salary[knntrain$Salary == 1] <- 0
+knntrain$Salary[knntrain$Salary == 2] <- 1
+knntrain$Distance[knntrain$Distance == 1] <- 0
+knntrain$Distance[knntrain$Distance == 2] <- 1
+knntrain$license[knntrain$license == 1] <- 0
+knntrain$license[knntrain$license == 2] <- 1
+
+knntest$Transport[knntest$Transport == 1] <- 0
+knntest$Transport[knntest$Transport == 2] <- 1
+knntest$Gender[knntest$Gender == 1] <- 0
+knntest$Gender[knntest$Gender == 2] <- 1
+knntest$Engineer[knntest$Engineer == 1] <- 0
+knntest$Engineer[knntest$Engineer == 2] <- 1
+knntest$MBA[knntest$MBA == 1] <- 0
+knntest$MBA[knntest$MBA == 2] <- 1
+knntest$Salary[knntest$Salary == 1] <- 0
+knntest$Salary[knntest$Salary == 2] <- 1
+knntest$Distance[knntest$Distance == 1] <- 0
+knntest$Distance[knntest$Distance == 2] <- 1
+knntest$license[knntest$license == 1] <- 0
+knntest$license[knntest$license == 2] <- 1
+
+knnmodel <- knn(scale(knntrain),scale(knntest),knntrain$Transport,k=17)
+summary(knnmodel)
+```
+### Interpretation:
+After Trail and Error Method @ k = 17 the Model performs well in predicting Both 0 (Customer who wil-l not cancel) and 1 (Customer who will cancel) when compared to Logistic Regression model.
+Our Model Predicted 64 '0' and 20 '1'.Now, Let's Check how well it have performed by using Confusion Matrix
+
+## Confusion Matrix 
+```{r}
+knntable <- table(test$Transport,knnmodel)
+print(knntable)
+# Accuracy 
+knnaccuracy <- round(sum(diag(knntable))/sum(knntable),2)
+print(knnaccuracy)
+# Sensitivity 
+sensitivity <- round(20/(20+0),2)
+print(sensitivity)
+# Specificity
+specificity <-round(63/(63 + 1),2)
+print(specificity)
+```
+With 99% accuracy our KNN-Model has Done well in predicting both the 0 (98%) (employees who use 2wheeler and car as a mode of transport to the office) and  1 (99.9%) (Employees who are using car as a mode of transport).
+
+Let's Look, How Naive Bayes Model works on this Dataset.
+
+## Naive Bayes 
+The Naive Bayes is a classification algorithm that is suitable for binary and multiclass classification.
+Generally,Naïve Bayes performs well in cases of categorical input variables compared to numerical variables.
+so therefore we can use Naive Bayes Algorithm for this use case.Let's Build the model and see its performance on the Train and Test data.
+
+```{r}
+library(e1071)
+NBModel <- naiveBayes(Transport~Gender+Engineer+MBA+Distance+license,data = train)
+print(NBModel)
+NBPredictTrain <- predict(NBModel,newdata = train)
+```
+The model creates the conditional probability for each feature separately. 
+We also have the a-priori probabilities which indicates the distribution of our data. 
+Let's see how the model performs on the Training data.
+
+# Confusion Matrix on Train Dataset
+```{r}
+NBTrainTable <- table(train$Transport,NBPredictTrain)
+print(NBTrainTable)
+# Accuracy 
+NBTrainaccuracy <- round(sum(diag(NBTrainTable))/sum(NBTrainTable),2)
+print(NBTrainaccuracy)
+# Sensitivity 
+NBTrainsensitivity <- round(42/(42+4),2)
+print(NBTrainsensitivity)
+# Specificity
+NBTrainspecificity <-round(143/(143 + 7),2)
+print(NBTrainspecificity)
+```
+Based On Confusion Matrix,With 94% accuracy on the Training Dataset Our Naive Bayes Model Done well in predicting both the 0 (95%) and 1 (91%)
+
+Let's Look, how the Naive Bayes Model performs on the Test Data set 
+
+```{r}
+NBTestPredict <- predict(NBModel,newdata = test)
+```
+## Confusion Matrix on Test Dataset
+```{r}
+NBTestTable <- table(test$Transport,NBTestPredict)
+print(NBTestTable)
+# Accuracy 
+NBTestaccuracy <- round(sum(diag(NBTestTable))/sum(NBTestTable),2)
+print(NBTestaccuracy)
+
+# Sensitivity 
+NBTestsensitivity <- round(20/(20+1),2)
+print(NBTestsensitivity)
+
+# Specificity
+NBTestspecificity <-round(62/(62 + 1),2)
+print(NBTestspecificity)
+```
+Based On Confusion Matrix,With 98% accuracy on the Test Dataset Our Naive Bayes Model Done well in predicting both the 0 (98%) and 1 (95%)
+
+Let's check out how bagging and boosting models perform in this dataset
+# Bagging 
+
+Bagging is a way to decrease the variance in the prediction by generating additional data for training from dataset using combinations with repetitions to produce multi-sets of the original data
+```{r}
+library(gbm)          # basic implementation using AdaBoost
+library(xgboost)      # a faster implementation of a gbm
+library(caret)        # an aggregator package for performing many machine learning models
+library(ipred)
+library(rpart)
+
+bagging = bagging(Transport~ Gender+Engineer+MBA+Distance+license,data=train,control=rpart.control(maxdepth = 5,minsplit =15 ))
+
+Bagging_Prediction = predict(bagging,test)
+
+Bagging_CM=table(test$Transport,Bagging_Prediction)
+Bagging_CM
+```
+#Model performance for bagging
+```{r}
+#specificity
+bag_Specificity = round(61/(61 + 2),2)
+bag_Specificity
+
+#sensitivity
+
+bag_Sensitiviity=round(19/(19 + 2),2)
+bag_Sensitiviity
+
+#accuracy
+bag_Accuracy=round(sum(diag(Bagging_CM))/sum(Bagging_CM),2)
+bag_Accuracy
+```
+Based On Confusion Matrix,With 95% accuracy on the Test Dataset Our Bagging Model has done well in predicting both the 0 (97%) and 1 (90%)
+
+```{r}
+#ROC Curve
+library(pROC)
+test$Transport =as.numeric(test$Transport)
+Bagging_Prediction=as.numeric(Bagging_Prediction)
+roc(test$Transport,Bagging_Prediction)
+plot.roc(test$Transport,Bagging_Prediction, main="AUC Curve for Bagging")
+```
+# Boosting
+
+Now let's try some general boosting techniques.
+```{r}
+str(train)
+boosttrain <- train
+boosttest <- test
+boosttrain$Gender <- as.numeric(boosttrain$Gender) 
+boosttrain$Engineer <- as.numeric(boosttrain$Engineer)
+boosttrain$MBA <- as.numeric(boosttrain$MBA)
+boosttrain$license <- as.numeric(boosttrain$license)
+boosttrain$Transport <- as.numeric(boosttrain$Transport)
+str(boosttrain)
+boosttest$Gender <- as.numeric(boosttest$Gender) 
+boosttest$Engineer <- as.numeric(boosttest$Engineer)
+boosttest$MBA <- as.numeric(boosttest$MBA)
+boosttest$license <- as.numeric(boosttest$license)
+boosttest$Transport <- as.numeric(boosttest$Transport)
+str(boosttest)
+boosttrain$Transport[boosttrain$Transport == 1] <- 0
+boosttrain$Transport[boosttrain$Transport == 2] <- 1
+boosttrain$Gender[boosttrain$Gender == 1] <- 0
+boosttrain$Gender[boosttrain$Gender == 2] <- 1
+boosttrain$Engineer[boosttrain$Engineer == 1] <- 0
+boosttrain$Engineer[boosttrain$Engineer == 2] <- 1
+boosttrain$MBA[boosttrain$MBA == 1] <- 0
+boosttrain$MBA[boosttrain$MBA == 2] <- 1
+boosttrain$Salary[boosttrain$Salary == 1] <- 0
+boosttrain$Salary[boosttrain$Salary == 2] <- 1
+boosttrain$Distance[boosttrain$Distance == 1] <- 0
+boosttrain$Distance[boosttrain$Distance == 2] <- 1
+boosttrain$license[boosttrain$license == 1] <- 0
+boosttrain$license[boosttrain$license == 2] <- 1
+
+boosttest$Transport[boosttest$Transport == 1] <- 0
+boosttest$Transport[boosttest$Transport == 2] <- 1
+boosttest$Gender[boosttest$Gender == 1] <- 0
+boosttest$Gender[boosttest$Gender == 2] <- 1
+boosttest$Engineer[boosttest$Engineer == 1] <- 0
+boosttest$Engineer[boosttest$Engineer == 2] <- 1
+boosttest$MBA[boosttest$MBA == 1] <- 0
+boosttest$MBA[boosttest$MBA == 2] <- 1
+boosttest$Salary[boosttest$Salary == 1] <- 0
+boosttest$Salary[boosttest$Salary == 2] <- 1
+boosttest$Distance[boosttest$Distance == 1] <- 0
+boosttest$Distance[boosttest$Distance == 2] <- 1
+boosttest$license[boosttest$license == 1] <- 0
+boosttest$license[boosttest$license == 2] <- 1
+
+boost_model=gbm(Transport ~ Gender+Engineer+MBA+Distance+license,distribution = "bernoulli",data=boosttrain,n.trees = 100,interaction.depth =1,shrinkage = 0.001,cv.folds = 5,n.cores=NULL,verbose=FALSE)
+
+boost_prediction <- predict(boost_model,boosttest,type="response")
+boost_prediction <-ifelse(boost_prediction>0.27,"1","0")
+print(boost_prediction)
+boost_CM= table(boosttest$Transport,boost_prediction)
+print(boost_CM)
+```
+# Confusion Matrix
+```{r}
+#specificity
+boost_Specificity = round(55/(55 + 3),2)
+print(boost_Specificity)
+
+#sensitivity
+
+bag_Sensitiviity=round(18/(18 + 8),2)
+print(bag_Sensitiviity)
+
+#accuracy
+boost_Accuracy=round(sum(diag(boost_CM))/sum(boost_CM),2)
+print(boost_Accuracy)
+```
+Based On Confusion Matrix,With 87% accuracy on the Test Dataset Our Boosting Model has done well in predicting the 0 (95%) than in predicting 1 (69%)
+
+#ROC Curve
+```{r}
+boosttest$Transport <- as.numeric(boosttest$Transport)
+boost_prediction <- as.numeric(boost_prediction)
+roc(test$Transport,boost_prediction)
+plot.roc(test$Transport,Bagging_Prediction, main="AUC Curve for Boosting")
+
+library(fastAdaboost)
+
+library(xgboost)
+
+features_train = as.matrix(boosttrain[,-7])
+label_train = as.matrix(boosttrain[,-c(1:6)])
+features_test = as.matrix(boosttest[,-7])
+tp_xbg=vector()
+lr=c(0.001,0.01,0.1,0.3,0.5,0.7,1)
+md=c(1,3,5,7,9,15)
+nr=c(2,50,100,1000,1000)
+for (i in lr) {
+  xgb.fit=xgboost(
+    data = features_train,
+    label= label_train,
+    eta = 0.001,
+    max_depth = 5,
+    nrounds = 10,
+    nfold=5,
+    objective = "binary:logistic", 
+    verbose = 0,
+    early_stopping_rounds = 10
+  )  
+  XGBpredTest=boosttest$xgb.pred = predict(xgb.fit, features_test)
+  sum(boosttest$Transport==1&boosttest$xgb.pred>=0.5)
+  tabXGB=table(boosttest$Transport, XGBpredTest>0.5)
+}
+xgboost_CM <- table(boosttest$Transport,boosttest$xgb.pred>=0.5)
+```
+# XG Boost Confusion Matrix
+```{r}
+#specificity
+xgboost_Specificity = round(63/(63 + 3),2)
+print(xgboost_Specificity)
+
+#sensitivity
+
+xgboost_Sensitiviity=round(18/(18 + 0),2)
+print(xgboost_Sensitiviity)
+
+#accuracy
+xgboost_Accuracy=round(sum(diag(xgboost_CM))/sum(xgboost_CM),2)
+print(boost_Accuracy)
+```
+Based On Confusion Matrix,with 87% accuracy on the Test Dataset Our Boosting Model has done well in predicting the 0 (95%) than in predicting 1 (100%)
