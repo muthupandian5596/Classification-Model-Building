@@ -1,0 +1,218 @@
+---
+title: "India Credit Risk - FRA"
+author: "Muthu Pandian G"
+date: "March 21, 2020"
+output: word_document
+---
+
+```{r echo= FALSE}
+setwd("D:/Great Lakes/Projects/Domain/FRA")
+getwd()
+library(xlsx)
+rawdata <- read.xlsx("raw-data.xlsx",sheetIndex = 1)
+validation_data <- read.xlsx("validation_data.xlsx",sheetIndex = 1)
+rawdata$default <- ifelse(rawdata$Networth.Next.Year>0,0,1)
+summary(as.factor(rawdata$default))
+243/3298
+```
+##Understanding the data
+### Structure of Data
+
+```{r echo= FALSE}
+str(rawdata)
+#str(validation_data)
+sum(is.na(rawdata))
+colSums(is.na(rawdata))
+summary(rawdata)
+```
+
+
+## Missing value Treatment 
+```{r echo= FALSE}
+# removing Deposits (accepted by commercial banks) column as it is full of NA
+
+rawdata <- rawdata[,-22]
+validation_data <- validation_data[,-22]
+rawdata.nona <- rawdata
+validation_data.nona <- validation_data
+
+rawdata.nona$Creditors.turnover <- as.numeric(rawdata.nona$Creditors.turnover)
+validation_data.nona$Creditors.turnover <- as.numeric(validation_data.nona$Creditors.turnover)
+rawdata.nona$Debtors.turnover <- as.numeric(rawdata.nona$Debtors.turnover)
+validation_data.nona$Debtors.turnover <- as.numeric(validation_data.nona$Debtors.turnover)
+rawdata.nona$Finished.goods.turnover <- as.numeric(rawdata.nona$Finished.goods.turnover)
+validation_data.nona$Finished.goods.turnover <- as.numeric(validation_data.nona$Finished.goods.turnover)
+rawdata.nona$WIP.turnover <- as.numeric(rawdata.nona$WIP.turnover)
+validation_data.nona$WIP.turnover <- as.numeric(validation_data.nona$WIP.turnover)
+rawdata.nona$Raw.material.turnover <- as.numeric(rawdata.nona$Raw.material.turnover)
+validation_data.nona$Raw.material.turnover <- as.numeric(validation_data.nona$Raw.material.turnover)
+rawdata.nona$Shares.outstanding <- as.numeric(rawdata.nona$Shares.outstanding)
+validation_data.nona$Shares.outstanding <- as.numeric(validation_data.nona$Shares.outstanding)
+rawdata.nona$Equity.face.value <- as.numeric(rawdata.nona$Equity.face.value)
+validation_data.nona$Equity.face.value <- as.numeric(validation_data.nona$Equity.face.value)
+rawdata.nona$PE.on.BSE <- as.numeric(rawdata.nona$PE.on.BSE)
+validation_data.nona$PE.on.BSE <- as.numeric(validation_data.nona$PE.on.BSE)
+sum(is.na(rawdata.nona))
+
+for(i in 1:ncol(rawdata.nona)){
+  rawdata.nona[is.na(rawdata.nona[,i]), i] <- mean(rawdata.nona[,i], na.rm = TRUE)
+}
+
+sum(is.na(rawdata.nona))
+
+sum(is.na(validation_data.nona))
+
+for(i in 1:ncol(validation_data.nona)){
+  validation_data.nona[is.na(validation_data.nona[,i]), i] <- mean(validation_data.nona[,i], na.rm = TRUE)
+}
+
+sum(is.na(validation_data.nona))
+
+```
+## Outlier Treatment 
+
+For values that lie outside the 1.5 * IQR limits, we could cap it by replacing those observations outside the lower limit with the value of 25th %ile and those that lie above the upper limit, with the value of 75th %ile
+
+```{r}
+boxplot(rawdata.nona$Total.assets)
+
+fun <- function(x){
+    quantiles <- quantile( x, c(.25, .75 ) )
+    x[ x < quantiles[1] ] <- quantiles[1]
+    x[ x > quantiles[2] ] <- quantiles[2]
+    x
+}
+default <- rawdata.nona$default
+
+for (i in 2:ncol(rawdata.nona)) {
+rawdata.nona[,i] <- fun( rawdata.nona[,i] )  
+}
+
+rawdata.nona$default <- default
+summary(as.factor(rawdata.nona$default))
+boxplot(rawdata.nona$Total.assets)
+summary(rawdata.nona)
+
+
+```
+## EDA
+# Univariate Analysis 
+```{r echo=FALSE}
+library(ggplot2)
+
+ggplot(rawdata.nona,aes(x = Profit.after.tax))+ geom_histogram(fill = "#009E73",colour = "Black",binwidth = 15)+ ggtitle("Profit after Tax based on Total Income") + theme(plot.title = element_text(hjust = 0.5))+xlab("Profit after Tax based on Total Income")
+
+
+ggplot(rawdata.nona,aes(x = Sales))+ geom_histogram(fill = "purple",colour = "Black",binwidth = 30)+ ggtitle("Sales") + theme(plot.title = element_text(hjust = 0.5))+xlab("Sales")
+
+
+ggplot(rawdata.nona,aes(x = Total.capital))+ geom_histogram(fill = "Brown",colour = "Black",binwidth = 25)+ ggtitle("Total Capital") + theme(plot.title = element_text(hjust = 0.5))+xlab("Total Capital")
+
+ggplot(rawdata.nona,aes(x = Current.liabilities...provisions))+ geom_histogram(fill = "Red",colour = "Black",binwidth = 15)+ ggtitle("liabilities") + theme(plot.title = element_text(hjust = 0.5))+xlab("Liabilities")
+
+ggplot(rawdata.nona,aes(x = Borrowings))+ geom_histogram(fill = "Yellow",colour = "Black",binwidth = 25)+ ggtitle("Borrowings") + theme(plot.title = element_text(hjust = 0.5))+xlab("Borrowings")
+
+
+```
+
+# Bivariate Analysis 
+```{r echo=FALSE}
+
+ggplot(rawdata.nona,aes(as.factor(default),fill = Borrowings))+geom_bar()+ggtitle("Default vs Borrowings")+ theme(plot.title = element_text(hjust = 0.5))+ xlab("Borrowings")
+
+plot(as.factor(rawdata.nona$default),rawdata.nona$Profit.after.tax)
+
+```
+## Removing Multicollinearity 
+As a rule of thumb, a VIF value that exceeds 5 or 10 indicates a problematic amount of collinearity
+```{r}
+library(car)
+vif.model <- glm(default~.,rawdata.nona,family = "binomial")
+summary(vif.model)
+rawdata.nona <- rawdata.nona[,-50]
+vif.model1 <- glm(default~.,rawdata.nona,family = "binomial")
+alias(vif.model)
+vif(vif.model1)
+names(rawdata.nona)
+rawdata.nona <- rawdata.nona[,-c(48,49)]
+vif.model2 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model2)
+rawdata.nona <- rawdata.nona[,-c(5)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+rawdata.nona <- rawdata.nona[,-c(3,26)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+rawdata.nona <- rawdata.nona[,-c(3,5,6)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+rawdata.nona <- rawdata.nona[,-c(4,18,20)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+rawdata.nona <- rawdata.nona[,-c(2,4,5)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+rawdata.nona <- rawdata.nona[,-c(4,5,12,14,15,20)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+rawdata.nona <- rawdata.nona[,-c(6,8,18)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+rawdata.nona <- rawdata.nona[,-c(9,10,16,18)]
+vif.model3 <- glm(default~.,rawdata.nona,family = "binomial")
+vif(vif.model3)
+
+validation_data.nona1 <- validation_data.nona[,c(1,2,6,12,15,16,18,20,22,30,31,33,34,35,38,40,41,42,43,44,45,46,47,51)]
+```
+
+# Logistic Regression 
+```{r echo=FALSE}
+Default_model <- glm(default~.,rawdata.nona,family = "binomial")
+summary(Default_model)
+
+```
+
+```{r echo= FALSE}
+Default_model1 <- glm(default~rawdata.nona$Cash.to.average.cost.of.sales.per.day+Debt.to.equity.ratio..times.+Net.working.capital+PAT.as...of.net.worth+Cash.profit.as...of.total.income+Current.assets+Investments+Borrowings+rawdata.nona$Contingent.liabilities...Net.worth....,rawdata.nona,family = "binomial")
+summary(Default_model1)
+plot(as.factor(Default_model1$y),Default_model1$fitted.values)
+
+```
+# Model Prediction
+```{r}
+
+Default_prediction = ifelse(Default_model1$fitted.values>0.12,1,0)
+summary(as.factor(Default_prediction))
+
+Result <- table(as.factor(Default_model1$y),Default_prediction)
+Result
+# Accuracy
+accuracy <- round(sum(diag(Result))/sum(Result),2)
+accuracy
+
+# Sensitivity 
+sensitivity <- round(2845/(2845+453),2)
+sensitivity
+
+# Specificity
+specificity <-round(190/(53+190),2)
+specificity
+
+```
+
+```{r echo= FALSE}
+validation_data.nona1$default <- validation_data$Default...1
+validation_data.nona1 <- validation_data.nona1[,-2]
+Validation_Prediction =predict(Default_model1,validation_data.nona1,type="response")
+#Validation_Prediction =ifelse(Validation_Prediction>0.90,"Default","NonDefault")
+#summary(as.factor(Predicted_Validation))
+#names(rawdata.nona)
+```
+
+
+
